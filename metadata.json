@@ -1,0 +1,6 @@
+{
+  "name": "EduMate",
+  "description": "An interactive, ultra-polished mobile app simulation of the EduMate gamified study adventure, featuring splash, login, and registration screens.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

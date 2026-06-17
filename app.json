@@ -1,0 +1,23 @@
+{
+  "expo": {
+    "name": "EduMate",
+    "slug": "edumate-client",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "scheme": "edumate",
+    "userInterfaceStyle": "dark",
+    "newArchEnabled": true,
+    "ios": {
+      "supportsTablet": true
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#0d0a14"
+      }
+    },
+    "plugins": ["expo-router"],
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}

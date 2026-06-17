@@ -1,0 +1,36 @@
+{
+  "name": "edumate-client",
+  "version": "1.0.0",
+  "main": "expo-router/entry",
+  "scripts": {
+    "start": "expo start",
+    "android": "expo start --android",
+    "ios": "expo start --ios",
+    "web": "expo start --web",
+    "lint": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@expo/vector-icons": "^14.0.0",
+    "@react-native-community/slider": "^4.5.0",
+    "axios": "^1.18.0",
+    "expo": "~52.0.0",
+    "expo-asset": "^56.0.17",
+    "expo-constants": "~17.0.0",
+    "expo-linking": "~7.0.0",
+    "expo-router": "^4.0.22",
+    "expo-status-bar": "~2.0.0",
+    "isexe": "^4.0.0",
+    "react": "18.3.1",
+    "react-native": "0.76.9",
+    "react-native-gesture-handler": "~2.20.0",
+    "react-native-reanimated": "~3.16.0",
+    "react-native-safe-area-context": "4.14.0",
+    "react-native-screens": "~4.4.0",
+    "zustand": "^4.5.7"
+  },
+  "devDependencies": {
+    "@types/react": "~18.3.0",
+    "typescript": "~5.3.3"
+  },
+  "private": true
+}
