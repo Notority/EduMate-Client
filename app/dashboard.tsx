@@ -1,28 +1,26 @@
 import { useState, useEffect } from 'react';
-import { View, Text, ScrollView } from 'react-native';
-import { useRouter, useSegments } from 'expo-router';
+import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { useRouter } from 'expo-router';
 import { PhoneFrame } from '../src/layout/PhoneFrame';
 import { DashboardHeader } from '../src/components/DashboardHeader';
 import { WelcomeBanner } from '../src/components/WelcomeBanner';
 import { StatBadge, StatBadgeRow } from '../src/components/StatBadge';
-import { CourseItem } from '../src/components/CourseItem';
-import { BadgeGrid } from '../src/components/BadgeGrid';
-import { AICard } from '../src/components/AICard';
+import { GlassCard } from '../src/components/GlassCard';
 import { ConfigPanel } from '../src/components/ConfigPanel';
 import { useStore } from '../src/store/useStore';
 import { colors } from '../src/constants/theme';
+import { Button } from '../src/ui/Button';
 
 export default function DashboardScreen() {
   const r = useRouter();
   const user = useStore((s) => s.user);
-  const quizzesCompleted = useStore((s) => s.quizzesCompleted);
-  const courses = useStore((s) => s.courses);
-  const events = useStore((s) => s.events);
-  const addXp = useStore((s) => s.addXp);
-  const setQuizzesCompleted = useStore((s) => s.setQuizzesCompleted);
+  const enrollments = useStore((s) => s.enrollments);
+  const learningProgress = useStore((s) => s.learningProgress);
+  const getEnrollments = useStore((s) => s.getEnrollments);
+  const getLearningProgress = useStore((s) => s.getLearningProgress);
   const logout = useStore((s) => s.logout);
-  const [os, setOs] = useState(false);
   const [sc, setSc] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   // Redirect based on role
   useEffect(() => {
@@ -30,6 +28,20 @@ export default function DashboardScreen() {
       r.replace('/teacher-dashboard');
     }
   }, [user.role]);
+
+  useEffect(() => {
+    loadData();
+  }, []);
+
+  const loadData = async () => {
+    try {
+      await Promise.all([getEnrollments(), getLearningProgress()]);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   if (user.role === 'TEACHER') {
     return null;
@@ -44,14 +56,6 @@ export default function DashboardScreen() {
     r.push('/profile');
   };
 
-  const handleQuest = () => {
-    if (!os) {
-      setOs(true);
-      addXp(150);
-      setQuizzesCompleted(quizzesCompleted + 1);
-    }
-  };
-
   return (
     <PhoneFrame>
       {sc && <ConfigPanel onClose={() => setSc(false)} />}
@@ -59,43 +63,107 @@ export default function DashboardScreen() {
         <DashboardHeader onLogout={handleLogout} onConfig={() => setSc(true)} onProfile={handleProfile} />
         <View style={{ padding: 16, gap: 12 }}>
           <WelcomeBanner userName={`${user.firstName} ${user.lastName}`} />
-          <StatBadgeRow>
-            <StatBadge icon="🔥" label="STUDY STREAK" value={`${user.streakDays} Days`} accent={colors.tertiary} />
-            <StatBadge icon="📊" label="LEVEL QUEST" value={`XP ${user.xpPoints}/3000`} accent={colors.secondary} />
-          </StatBadgeRow>
-          <StatBadgeRow>
-            <StatBadge icon="📝" label="QUIZZES" value={`${quizzesCompleted} Done`} accent={colors.secondary} />
-            <StatBadge icon="🏆" label="RANK" value="Gold III" accent={colors.tertiary} />
-          </StatBadgeRow>
-          <View style={{ gap: 8 }}>
-            <Text style={{ color: colors.white, fontSize: 14, fontWeight: '700' }}>📚 Continue Learning</Text>
-            {courses.length > 0
-              ? courses.map((c) => <CourseItem key={c.id} {...c} />)
-              : <Text style={{ color: colors.surfaceVariant, fontSize: 12, fontStyle: 'italic' }}>No courses yet. Start learning!</Text>
-            }
-          </View>
-          <AICard onPress={handleQuest} claimed={os} xpReward={150} />
-          <View style={{ gap: 8 }}>
-            <Text style={{ color: colors.white, fontSize: 14, fontWeight: '700' }}>📅 Upcoming Events</Text>
-            {events.length > 0
-              ? <View style={{ flexDirection: 'row', gap: 10 }}>
-                  {events.map((e) => (
-                    <View key={e.id} style={{ flex: 1, backgroundColor: 'rgba(23,18,33,1)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)', borderRadius: 12, padding: 10, gap: 4 }}>
-                      <View style={{ alignSelf: 'flex-start', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6, backgroundColor: `${e.tagColor}25` }}>
-                        <Text style={{ fontSize: 8, fontWeight: '700', color: e.tagColor }}>{e.tag}</Text>
-                      </View>
-                      <Text style={{ color: colors.white, fontSize: 11, fontWeight: '700' }}>{e.title}</Text>
-                      <Text style={{ color: colors.surfaceVariant, fontSize: 9, fontWeight: '600' }}>{e.time}</Text>
+          
+          {loading ? (
+            <GlassCard style={{ padding: 24, alignItems: 'center' }}>
+              <ActivityIndicator size="large" color={colors.primary} />
+            </GlassCard>
+          ) : (
+            <>
+              <StatBadgeRow>
+                <StatBadge 
+                  icon="📚" 
+                  label="COURSES" 
+                  value={`${learningProgress?.totalCoursesEnrolled || 0}`} 
+                  accent={colors.primary} 
+                />
+                <StatBadge 
+                  icon="📝" 
+                  label="QUIZZES" 
+                  value={`${learningProgress?.totalQuizzesCompleted || 0}`} 
+                  accent={colors.secondary} 
+                />
+              </StatBadgeRow>
+              
+              {learningProgress && (
+                <GlassCard style={{ padding: 16, gap: 12 }}>
+                  <Text style={{ color: colors.white, fontSize: 18, fontWeight: '700' }}>
+                    Learning Progress Overview
+                  </Text>
+                  <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                    <View style={{ alignItems: 'center' }}>
+                      <Text style={{ color: colors.surfaceVariant, fontSize: 12 }}>Average Score</Text>
+                      <Text style={{ color: colors.tertiary, fontSize: 20, fontWeight: '700' }}>
+                        {learningProgress.averageScore.toFixed(1)}%
+                      </Text>
                     </View>
-                  ))}
+                    <View style={{ alignItems: 'center' }}>
+                      <Text style={{ color: colors.surfaceVariant, fontSize: 12 }}>Modules Completed</Text>
+                      <Text style={{ color: colors.emerald, fontSize: 20, fontWeight: '700' }}>
+                        {learningProgress.totalModulesCompleted}/{learningProgress.totalModulesAvailable}
+                      </Text>
+                    </View>
+                  </View>
+                </GlassCard>
+              )}
+              
+              <View style={{ gap: 8 }}>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <Text style={{ color: colors.white, fontSize: 14, fontWeight: '700' }}>📚 My Courses</Text>
+                  <TouchableOpacity onPress={() => r.push('/courses')}>
+                    <Text style={{ color: colors.secondary, fontSize: 12, fontWeight: '600' }}>Browse All</Text>
+                  </TouchableOpacity>
                 </View>
-              : <Text style={{ color: colors.surfaceVariant, fontSize: 12, fontStyle: 'italic' }}>No upcoming events.</Text>
-            }
-          </View>
-          <View style={{ gap: 8 }}>
-            <Text style={{ color: colors.white, fontSize: 14, fontWeight: '700' }}>✨ Achievements</Text>
-            <BadgeGrid />
-          </View>
+                {enrollments.length > 0 ? (
+                  enrollments.map((e) => (
+                    <GlassCard key={e.id} style={{ padding: 16 }}>
+                      <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                        <View style={{ flex: 1 }}>
+                          <Text style={{ color: colors.white, fontSize: 16, fontWeight: '700' }}>
+                            {e.course.title}
+                          </Text>
+                          <Text style={{ color: colors.surfaceVariant, fontSize: 12 }}>
+                            {e.course.teacherName}
+                          </Text>
+                        </View>
+                        <View style={{ alignItems: 'flex-end' }}>
+                          <Text style={{ color: e.course.color, fontSize: 16, fontWeight: '700' }}>
+                            {Math.round((e.modulesCompleted / e.totalModules) * 100)}%
+                          </Text>
+                        </View>
+                      </View>
+                      <View style={{ height: 8, backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: 4, marginTop: 8 }}>
+                        <View 
+                          style={{ 
+                            height: '100%', 
+                            width: `${(e.modulesCompleted / e.totalModules) * 100}%`, 
+                            backgroundColor: e.course.color, 
+                            borderRadius: 4 
+                          }} 
+                        />
+                      </View>
+                    </GlassCard>
+                  ))
+                ) : (
+                  <GlassCard style={{ padding: 16 }}>
+                    <Text style={{ color: colors.surfaceVariant, fontSize: 12, fontStyle: 'italic' }}>
+                      No courses enrolled yet. Browse all courses to get started!
+                    </Text>
+                  </GlassCard>
+                )}
+              </View>
+              
+              <View style={{ gap: 8 }}>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <Text style={{ color: colors.white, fontSize: 14, fontWeight: '700' }}>📝 Quiz History</Text>
+                  <TouchableOpacity onPress={() => r.push('/quiz-history')}>
+                    <Text style={{ color: colors.secondary, fontSize: 12, fontWeight: '600' }}>View All</Text>
+                  </TouchableOpacity>
+                </View>
+                <Button title="Browse Courses" onPress={() => r.push('/courses')} variant="primary" />
+              </View>
+            </>
+          )}
         </View>
       </ScrollView>
     </PhoneFrame>

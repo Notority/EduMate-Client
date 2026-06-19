@@ -14,6 +14,11 @@ export default function RootLayout() {
         <Stack.Screen name="profile" />
         <Stack.Screen name="teacher-dashboard" />
         <Stack.Screen name="teacher-verification" />
+        <Stack.Screen name="teacher-profile" />
+        <Stack.Screen name="teacher-courses" />
+        <Stack.Screen name="teacher-course-edit" />
+        <Stack.Screen name="courses" />
+        <Stack.Screen name="quiz-history" />
       </Stack>
     </>
   );

@@ -1,30 +1,46 @@
-import { View, Text, ScrollView, ActivityIndicator } from 'react-native';
+import { View, ScrollView } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { PhoneFrame } from '../src/layout/PhoneFrame';
 import { DashboardHeader } from '../src/components/DashboardHeader';
 import { WelcomeBanner } from '../src/components/WelcomeBanner';
-import { StatBadge, StatBadgeRow } from '../src/components/StatBadge';
-import { GlassCard } from '../src/components/GlassCard';
 import { useStore } from '../src/store/useStore';
-import { colors } from '../src/constants/theme';
-import { Button } from '../src/ui/Button';
+import { VerificationStatusCard } from '../src/components/VerificationStatusCard';
+import { TeacherStatsRow } from '../src/components/TeacherStatsRow';
+import { TeacherQuickActions } from '../src/components/TeacherQuickActions';
+import { TeacherProfilePreview } from '../src/components/TeacherProfilePreview';
 
 type VerificationStatus = 'PENDING' | 'APPROVED' | 'REJECTED' | null;
+type TeacherProfileData = {
+  subjects?: string;
+  experienceYears?: number;
+  education?: string;
+  certifications?: string;
+  hourlyRate?: number;
+  availability?: string;
+  totalStudents: number;
+  totalCourses: number;
+  totalReviews: number;
+  averageRating?: number;
+};
 
 export default function TeacherDashboardScreen() {
   const router = useRouter();
   const user = useStore((s) => s.user);
   const logout = useStore((s) => s.logout);
   const getTeacherVerification = useStore((s) => s.getTeacherVerification);
-  
+  const getTeacherProfile = useStore((s) => s.getTeacherProfile);
+
   const [loading, setLoading] = useState(true);
   const [verification, setVerification] = useState<{ status: VerificationStatus; documentUrl?: string; notes?: string } | null>(null);
+  const [profile, setProfile] = useState<TeacherProfileData | null>(null);
 
-  const fetchVerification = async () => {
+  const fetchData = async () => {
+    setLoading(true);
     try {
-      const data = await getTeacherVerification();
-      setVerification(data);
+      const [vData, pData] = await Promise.all([getTeacherVerification(), getTeacherProfile()]);
+      setVerification(vData);
+      setProfile(pData);
     } catch (err) {
       console.error(err);
     } finally {
@@ -32,30 +48,12 @@ export default function TeacherDashboardScreen() {
     }
   };
 
-  useEffect(() => {
-    fetchVerification();
-  }, []);
+  useEffect(() => fetchData(), []);
 
-  const handleLogout = () => {
-    logout();
-    router.replace('/login');
-  };
-
-  const handleProfile = () => {
-    router.push('/profile');
-  };
-
-  const handleVerification = () => {
-    router.push('/teacher-verification');
-  };
-
-  const getStatusColor = (status: VerificationStatus) => {
-    switch (status) {
-      case 'APPROVED': return colors.emerald;
-      case 'REJECTED': return colors.red;
-      default: return colors.tertiary;
-    }
-  };
+  const handleLogout = () => { logout(); router.replace('/login'); };
+  const handleProfile = () => router.push('/teacher-profile');
+  const handleVerification = () => router.push('/teacher-verification');
+  const handleMyCourses = () => router.push('/teacher-courses');
 
   return (
     <PhoneFrame>
@@ -63,65 +61,27 @@ export default function TeacherDashboardScreen() {
         <DashboardHeader onLogout={handleLogout} onProfile={handleProfile} />
         <View style={{ padding: 16, gap: 12 }}>
           <WelcomeBanner userName={`${user.firstName} ${user.lastName}`} />
-          
-          <StatBadgeRow>
-            <StatBadge icon="👥" label="Students" value="0" accent={colors.primary} />
-            <StatBadge icon="📚" label="Courses" value="0" accent={colors.secondary} />
-            <StatBadge icon="⭐" label="Rating" value="-" accent={colors.tertiary} />
-          </StatBadgeRow>
-
-          {loading ? (
-            <GlassCard style={{ padding: 24, alignItems: 'center' }}>
-              <ActivityIndicator size="large" color={colors.primary} />
-            </GlassCard>
-          ) : (
-            <GlassCard style={{ padding: 16, gap: 12 }}>
-              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                <Text style={{ color: colors.white, fontSize: 18, fontWeight: '700' }}>
-                  Verification Status
-                </Text>
-                {verification?.status && (
-                  <View style={{
-                    backgroundColor: `${getStatusColor(verification.status)}20`,
-                    paddingHorizontal: 12,
-                    paddingVertical: 6,
-                    borderRadius: 20
-                  }}>
-                    <Text style={{
-                      color: getStatusColor(verification.status),
-                      fontSize: 12,
-                      fontWeight: '700'
-                    }}>
-                      {verification.status}
-                    </Text>
-                  </View>
-                )}
-              </View>
-              {verification?.status === 'APPROVED' ? (
-                <Text style={{ color: colors.emerald, fontSize: 14, fontWeight: '600' }}>
-                  ✓ You're verified! You can start teaching now!
-                </Text>
-              ) : (
-                <>
-                  <Text style={{ color: colors.surfaceVariant, fontSize: 14 }}>
-                    {verification?.status === 'REJECTED' 
-                      ? `Verification rejected: ${verification.notes || 'Please resubmit your documents.'}`
-                      : 'Complete your verification to start teaching!'}
-                  </Text>
-                  <Button title="Go to Verification" onPress={handleVerification} />
-                </>
-              )}
-            </GlassCard>
+          {profile && <TeacherStatsRow
+            totalStudents={profile.totalStudents}
+            totalCourses={profile.totalCourses}
+            averageRating={profile.averageRating}
+          />}
+          <VerificationStatusCard
+            loading={loading}
+            verification={verification}
+            onGoToVerification={handleVerification}
+          />
+          {profile && <TeacherQuickActions
+            onEditProfile={handleProfile}
+            onMyCourses={handleMyCourses}
+          />}
+          {profile && (profile.subjects || profile.education) && (
+            <TeacherProfilePreview
+              subjects={profile.subjects}
+              experienceYears={profile.experienceYears}
+              education={profile.education}
+            />
           )}
-
-          <GlassCard style={{ padding: 16, gap: 8 }}>
-            <Text style={{ color: colors.white, fontSize: 18, fontWeight: '700' }}>
-              Quick Actions
-            </Text>
-            <View style={{ flexDirection: 'row', gap: 12 }}>
-              <Button title="Edit Profile" onPress={handleProfile} style={{ flex: 1 }} />
-            </View>
-          </GlassCard>
         </View>
       </ScrollView>
     </PhoneFrame>

@@ -21,6 +21,8 @@ export interface User {
   streakDays: number;
   quizzesCompleted: number;
   profilePicture?: string | null;
+  phone?: string | null;
+  bio?: string | null;
   accessToken: string | null;
   refreshToken: string | null;
 }
@@ -28,9 +30,37 @@ export interface User {
 export interface Course {
   id: number;
   title: string;
-  subtitle: string;
-  progress: number;
+  description?: string;
   color: string;
+  category?: string;
+  published?: boolean;
+  teacherId?: number;
+  teacherName?: string;
+  totalModules?: number;
+}
+
+export interface Enrollment {
+  id: number;
+  course: Course;
+  enrolledAt: string;
+  modulesCompleted: number;
+  totalModules: number;
+}
+
+export interface QuizAttempt {
+  id: number;
+  quizTitle: string;
+  courseTitle: string;
+  score: number;
+  attemptedAt: string;
+}
+
+export interface LearningProgress {
+  totalCoursesEnrolled: number;
+  totalQuizzesCompleted: number;
+  averageScore: number;
+  totalModulesCompleted: number;
+  totalModulesAvailable: number;
 }
 
 export interface Event {
