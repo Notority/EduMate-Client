@@ -1,13 +1,17 @@
 import { create } from 'zustand';
-import { AppConfig, User, Course, Event } from '../types';
-import { authApi, userApi, teacherApi, setAuthToken } from '../services/api';
+import { AppConfig, User, Course, Event, Enrollment, QuizAttempt, LearningProgress } from '../types';
+import { authApi, userApi, teacherApi, courseApi, studentApi, setAuthToken } from '../services/api';
 
 interface AppState {
   config: AppConfig;
   user: User;
   quizzesCompleted: number;
   courses: Course[];
+  myCourses: Course[];
   events: Event[];
+  enrollments: Enrollment[];
+  quizHistory: QuizAttempt[];
+  learningProgress: LearningProgress | null;
   isLoading: boolean;
   error: string | null;
 
@@ -29,6 +33,18 @@ interface AppState {
   updateTeacherProfile: (data: any) => Promise<void>;
   getTeacherVerification: () => Promise<any>;
   submitTeacherVerification: (documentUrl: string) => Promise<void>;
+  getMyCourses: () => Promise<Course[]>;
+  createCourse: (data: any) => Promise<void>;
+  updateCourse: (id: number, data: any) => Promise<void>;
+  deleteCourse: (id: number) => Promise<void>;
+  togglePublishCourse: (id: number) => Promise<void>;
+  
+  // Student functions
+  getAllCourses: () => Promise<Course[]>;
+  getEnrollments: () => Promise<Enrollment[]>;
+  enrollInCourse: (courseId: number) => Promise<void>;
+  getQuizHistory: () => Promise<QuizAttempt[]>;
+  getLearningProgress: () => Promise<LearningProgress>;
 }
 
 const defaultConfig: AppConfig = {
@@ -48,14 +64,15 @@ export const useStore = create<AppState>((set) => ({
   config: defaultConfig,
   user: defaultUser,
   quizzesCompleted: 0,
-  courses: [
-    { id: 1, title: 'Data Structures', subtitle: 'Trees and Graphs', progress: 75, color: '#732ee4' },
-    { id: 2, title: 'Network Security', subtitle: 'Symm & Asymm Ciphers', progress: 40, color: '#ff4da6' },
-  ],
+  courses: [],
+  myCourses: [],
   events: [
     { id: 1, tag: 'LIVE CLASS', tagColor: '#ff4da6', title: 'System Design Basics', time: 'Today, 5:00 PM' },
     { id: 2, tag: 'CHALLENGE', tagColor: '#ffba27', title: 'Database Normalization', time: 'Tomorrow, 10:00 AM' },
   ],
+  enrollments: [],
+  quizHistory: [],
+  learningProgress: null,
   isLoading: false,
   error: null,
 
@@ -187,8 +204,18 @@ export const useStore = create<AppState>((set) => ({
   updateTeacherProfile: async (data) => {
     set({ isLoading: true, error: null });
     try {
-      await teacherApi.updateProfile(data);
-      set({ isLoading: false });
+      const res = await teacherApi.updateProfile(data);
+      const d = res.data;
+      set((s) => ({
+        user: {
+          ...s.user,
+          firstName: d.firstName,
+          lastName: d.lastName,
+          email: d.email,
+          phone: d.phone,
+        },
+        isLoading: false,
+      }));
     } catch (err: any) {
       const msg = err.response?.data?.message || 'Failed to update teacher profile.';
       set({ error: msg, isLoading: false });
@@ -216,6 +243,137 @@ export const useStore = create<AppState>((set) => ({
       set({ isLoading: false });
     } catch (err: any) {
       const msg = err.response?.data?.message || 'Failed to submit verification.';
+      set({ error: msg, isLoading: false });
+      throw new Error(msg);
+    }
+  },
+
+  getMyCourses: async () => {
+    set({ isLoading: true, error: null });
+    try {
+      const res = await courseApi.getMyCourses();
+      set({ myCourses: res.data, isLoading: false });
+      return res.data;
+    } catch (err: any) {
+      const msg = err.response?.data?.message || 'Failed to load courses.';
+      set({ error: msg, isLoading: false });
+      throw new Error(msg);
+    }
+  },
+
+  createCourse: async (data) => {
+    set({ isLoading: true, error: null });
+    try {
+      await courseApi.createCourse(data);
+      const res = await courseApi.getMyCourses();
+      set({ myCourses: res.data, isLoading: false });
+    } catch (err: any) {
+      const msg = err.response?.data?.message || 'Failed to create course.';
+      set({ error: msg, isLoading: false });
+      throw new Error(msg);
+    }
+  },
+
+  updateCourse: async (id, data) => {
+    set({ isLoading: true, error: null });
+    try {
+      await courseApi.updateCourse(id, data);
+      const res = await courseApi.getMyCourses();
+      set({ myCourses: res.data, isLoading: false });
+    } catch (err: any) {
+      const msg = err.response?.data?.message || 'Failed to update course.';
+      set({ error: msg, isLoading: false });
+      throw new Error(msg);
+    }
+  },
+
+  deleteCourse: async (id) => {
+    set({ isLoading: true, error: null });
+    try {
+      await courseApi.deleteCourse(id);
+      const res = await courseApi.getMyCourses();
+      set({ myCourses: res.data, isLoading: false });
+    } catch (err: any) {
+      const msg = err.response?.data?.message || 'Failed to delete course.';
+      set({ error: msg, isLoading: false });
+      throw new Error(msg);
+    }
+  },
+
+  togglePublishCourse: async (id) => {
+    set({ isLoading: true, error: null });
+    try {
+      await courseApi.togglePublish(id);
+      const res = await courseApi.getMyCourses();
+      set({ myCourses: res.data, isLoading: false });
+    } catch (err: any) {
+      const msg = err.response?.data?.message || 'Failed to update course status.';
+      set({ error: msg, isLoading: false });
+      throw new Error(msg);
+    }
+  },
+  
+  // Student functions
+  getAllCourses: async () => {
+    set({ isLoading: true, error: null });
+    try {
+      const res = await studentApi.getAllCourses();
+      set({ courses: res.data, isLoading: false });
+      return res.data;
+    } catch (err: any) {
+      const msg = err.response?.data?.message || 'Failed to load courses.';
+      set({ error: msg, isLoading: false });
+      throw new Error(msg);
+    }
+  },
+
+  getEnrollments: async () => {
+    set({ isLoading: true, error: null });
+    try {
+      const res = await studentApi.getEnrollments();
+      set({ enrollments: res.data, isLoading: false });
+      return res.data;
+    } catch (err: any) {
+      const msg = err.response?.data?.message || 'Failed to load enrollments.';
+      set({ error: msg, isLoading: false });
+      throw new Error(msg);
+    }
+  },
+
+  enrollInCourse: async (courseId) => {
+    set({ isLoading: true, error: null });
+    try {
+      await studentApi.enrollInCourse(courseId);
+      const res = await studentApi.getEnrollments();
+      set({ enrollments: res.data, isLoading: false });
+    } catch (err: any) {
+      const msg = err.response?.data?.message || 'Failed to enroll in course.';
+      set({ error: msg, isLoading: false });
+      throw new Error(msg);
+    }
+  },
+
+  getQuizHistory: async () => {
+    set({ isLoading: true, error: null });
+    try {
+      const res = await studentApi.getQuizHistory();
+      set({ quizHistory: res.data, isLoading: false });
+      return res.data;
+    } catch (err: any) {
+      const msg = err.response?.data?.message || 'Failed to load quiz history.';
+      set({ error: msg, isLoading: false });
+      throw new Error(msg);
+    }
+  },
+
+  getLearningProgress: async () => {
+    set({ isLoading: true, error: null });
+    try {
+      const res = await studentApi.getLearningProgress();
+      set({ learningProgress: res.data, isLoading: false });
+      return res.data;
+    } catch (err: any) {
+      const msg = err.response?.data?.message || 'Failed to load learning progress.';
       set({ error: msg, isLoading: false });
       throw new Error(msg);
     }

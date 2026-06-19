@@ -51,4 +51,22 @@ export const teacherApi = {
   getPublicProfile: (id: number) => api.get(`/teachers/public/${id}`)
 };
 
+export const courseApi = {
+  getMyCourses: () => api.get('/courses/my-courses'),
+  getAllCourses: (filters?: { search?: string; category?: string; published?: boolean }) => api.get('/courses', { params: filters }),
+  getCourseById: (id: number) => api.get(`/courses/${id}`),
+  createCourse: (data: any) => api.post('/courses', data),
+  updateCourse: (id: number, data: any) => api.put(`/courses/${id}`, data),
+  deleteCourse: (id: number) => api.delete(`/courses/${id}`),
+  togglePublish: (id: number) => api.patch(`/courses/${id}/toggle-publish`)
+};
+
+export const studentApi = {
+  getAllCourses: () => api.get('/students/courses'),
+  getEnrollments: () => api.get('/students/enrollments'),
+  enrollInCourse: (courseId: number) => api.post(`/students/enroll/${courseId}`),
+  getQuizHistory: () => api.get('/students/quiz-history'),
+  getLearningProgress: () => api.get('/students/progress')
+};
+
 export default api;
