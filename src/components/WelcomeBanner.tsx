@@ -4,18 +4,31 @@ import { AnimatedLogo } from './AnimatedLogo';
 
 interface Props {
   userName: string;
+  xpPoints: number;
+  level: number;
 }
 
-export function WelcomeBanner({ userName }: Props) {
+const XP_PER_LEVEL = 100;
+
+export function WelcomeBanner({ userName, xpPoints, level }: Props) {
   const first = userName.split(' ')[0] || 'Adventurer';
+  const xpInLevel = xpPoints % XP_PER_LEVEL;
+  const xpProgress = xpInLevel / XP_PER_LEVEL;
+
   return (
     <View style={styles.banner}>
       <View style={styles.content}>
-        <Text style={styles.badge}>LEVEL 12 ADVENTURER</Text>
+        <Text style={styles.badge}>LEVEL {level} ADVENTURER</Text>
         <Text style={styles.greeting}>Welcome back, {first}!</Text>
         <Text style={styles.message}>
           You are completing study quests 32% faster this week. Keep up the streak!
         </Text>
+        <View style={styles.xpRow}>
+          <View style={styles.xpBarBg}>
+            <View style={[styles.xpBarFill, { width: `${xpProgress * 100}%` }]} />
+          </View>
+          <Text style={styles.xpLabel}>{xpPoints} XP</Text>
+        </View>
       </View>
       <AnimatedLogo size={64} />
     </View>
@@ -52,5 +65,28 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '500',
     maxWidth: 280,
+  },
+  xpRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginTop: 4,
+  },
+  xpBarBg: {
+    flex: 1,
+    height: 6,
+    backgroundColor: 'rgba(255,255,255,0.1)',
+    borderRadius: 3,
+    overflow: 'hidden',
+  },
+  xpBarFill: {
+    height: '100%',
+    backgroundColor: colors.tertiary,
+    borderRadius: 3,
+  },
+  xpLabel: {
+    color: colors.tertiary,
+    fontSize: 10,
+    fontWeight: '700',
   },
 });

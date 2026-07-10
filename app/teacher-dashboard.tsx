@@ -48,19 +48,21 @@ export default function TeacherDashboardScreen() {
     }
   };
 
-  useEffect(() => fetchData(), []);
+  useEffect(() => { fetchData(); }, []);
 
   const handleLogout = () => { logout(); router.replace('/login'); };
   const handleProfile = () => router.push('/teacher-profile');
   const handleVerification = () => router.push('/teacher-verification');
   const handleMyCourses = () => router.push('/teacher-courses');
+  const handlePrivateCourses = () => router.push('/teacher-private-courses');
+  const handleEarnings = () => router.push('/teacher-earnings');
 
   return (
     <PhoneFrame>
       <ScrollView style={{ flex: 1, backgroundColor: '#0d0714' }}>
         <DashboardHeader onLogout={handleLogout} onProfile={handleProfile} />
         <View style={{ padding: 16, gap: 12 }}>
-          <WelcomeBanner userName={`${user.firstName} ${user.lastName}`} />
+          <WelcomeBanner userName={`${user.firstName} ${user.lastName}`} xpPoints={user.xpPoints} level={user.level} />
           {profile && <TeacherStatsRow
             totalStudents={profile.totalStudents}
             totalCourses={profile.totalCourses}
@@ -74,6 +76,8 @@ export default function TeacherDashboardScreen() {
           {profile && <TeacherQuickActions
             onEditProfile={handleProfile}
             onMyCourses={handleMyCourses}
+            onPrivateCourses={handlePrivateCourses}
+            onEarnings={handleEarnings}
           />}
           {profile && (profile.subjects || profile.education) && (
             <TeacherProfilePreview

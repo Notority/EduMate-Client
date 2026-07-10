@@ -1,13 +1,19 @@
-import { View, Text, StyleSheet, ViewStyle } from 'react-native';
-import { colors } from '../constants/theme';
+import { Animated, StyleSheet, ViewStyle } from 'react-native';
+import { useFadeIn } from '../hooks/useFadeIn';
 
 interface Props {
   children: React.ReactNode;
   style?: ViewStyle;
+  delay?: number;
 }
 
-export function GlassCard({ children, style }: Props) {
-  return <View style={[styles.card, style]}>{children}</View>;
+export function GlassCard({ children, style, delay = 0 }: Props) {
+  const { opacity, translateY } = useFadeIn(delay, 450);
+  return (
+    <Animated.View style={[styles.card, { opacity, transform: [{ translateY }] }, style]}>
+      {children}
+    </Animated.View>
+  );
 }
 
 const styles = StyleSheet.create({

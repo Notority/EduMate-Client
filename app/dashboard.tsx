@@ -1,171 +1,145 @@
-import { useState, useEffect } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator } from 'react-native';
-import { useRouter } from 'expo-router';
-import { PhoneFrame } from '../src/layout/PhoneFrame';
-import { DashboardHeader } from '../src/components/DashboardHeader';
-import { WelcomeBanner } from '../src/components/WelcomeBanner';
-import { StatBadge, StatBadgeRow } from '../src/components/StatBadge';
-import { GlassCard } from '../src/components/GlassCard';
-import { ConfigPanel } from '../src/components/ConfigPanel';
-import { useStore } from '../src/store/useStore';
-import { colors } from '../src/constants/theme';
-import { Button } from '../src/ui/Button';
+import { useEffect, useState, useRef } from "react";
+import { View, Text, ScrollView, ActivityIndicator, Alert, Animated } from "react-native";
+import { useRouter } from "expo-router";
+import { PhoneFrame } from "../src/layout/PhoneFrame";
+import { DashboardHeader } from "../src/components/DashboardHeader";
+import { WelcomeBanner } from "../src/components/WelcomeBanner";
+import { GlassCard } from "../src/components/GlassCard";
+import { ConfigPanel } from "../src/components/ConfigPanel";
+import { HamburgerMenu } from "../src/components/HamburgerMenu";
+import { useStore } from "../src/store/useStore";
+import { colors } from "../src/constants/theme";
+import { DashboardStats } from "../src/features/dashboard/DashboardStats";
+import { EnrollmentList } from "../src/features/dashboard/EnrollmentList";
+import { useFadeIn } from "../src/hooks/useFadeIn";
 
 export default function DashboardScreen() {
-  const r = useRouter();
-  const user = useStore((s) => s.user);
-  const enrollments = useStore((s) => s.enrollments);
-  const learningProgress = useStore((s) => s.learningProgress);
-  const getEnrollments = useStore((s) => s.getEnrollments);
-  const getLearningProgress = useStore((s) => s.getLearningProgress);
-  const logout = useStore((s) => s.logout);
-  const [sc, setSc] = useState(false);
+  const router = useRouter();
+  const user = useStore((state) => state.user);
+  const enrollments = useStore((state) => state.enrollments);
+  const learningProgress = useStore((state) => state.learningProgress);
+  const getEnrollments = useStore((state) => state.getEnrollments);
+  const getLearningProgress = useStore((state) => state.getLearningProgress);
+  const leaveCourse = useStore((state) => state.leaveCourse);
+  const logout = useStore((state) => state.logout);
+  const [showConfig, setShowConfig] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
   const [loading, setLoading] = useState(true);
 
-  // Redirect based on role
   useEffect(() => {
-    if (user.role === 'TEACHER') {
-      r.replace('/teacher-dashboard');
-    }
-  }, [user.role]);
-
+    if (user.role === "TEACHER") router.replace("/teacher-dashboard");
+  }, [router, user.role]);
   useEffect(() => {
-    loadData();
-  }, []);
+    Promise.all([getEnrollments(), getLearningProgress()]).finally(() =>
+      setLoading(false),
+    );
+  }, [getEnrollments, getLearningProgress]);
+  if (user.role === "TEACHER") return null;
 
-  const loadData = async () => {
-    try {
-      await Promise.all([getEnrollments(), getLearningProgress()]);
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  if (user.role === 'TEACHER') {
-    return null;
-  }
-
-  const handleLogout = () => {
-    logout();
-    r.replace('/login');
-  };
-
-  const handleProfile = () => {
-    r.push('/profile');
-  };
+  const confirmLeave = (courseId: number) =>
+    Alert.alert(
+      "Leave Course",
+      "Are you sure you want to leave this course? Your progress will be lost.",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Leave",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              await leaveCourse(courseId);
+              await getLearningProgress();
+            } catch (error: any) {
+              Alert.alert("Error", error.message);
+            }
+          },
+        },
+      ],
+    );
 
   return (
-    <PhoneFrame>
-      {sc && <ConfigPanel onClose={() => setSc(false)} />}
-      <ScrollView style={{ flex: 1, backgroundColor: '#0d0714' }}>
-        <DashboardHeader onLogout={handleLogout} onConfig={() => setSc(true)} onProfile={handleProfile} />
+    <PhoneFrame
+      overlay={
+        <>
+          {showConfig && <ConfigPanel onClose={() => setShowConfig(false)} />}
+          <HamburgerMenu
+            visible={menuOpen}
+            onClose={() => setMenuOpen(false)}
+            onNavigate={(route) => router.push(route as any)}
+          />
+        </>
+      }
+    >
+      <ScrollView style={{ flex: 1, backgroundColor: "transparent" }}>
+        <DashboardHeader
+          onLogout={() => {
+            logout();
+            router.replace("/login");
+          }}
+          onConfig={() => setShowConfig(true)}
+          onProfile={() => router.push("/profile")}
+          onMenuToggle={() => setMenuOpen(true)}
+        />
         <View style={{ padding: 16, gap: 12 }}>
-          <WelcomeBanner userName={`${user.firstName} ${user.lastName}`} />
-          
-          {loading ? (
-            <GlassCard style={{ padding: 24, alignItems: 'center' }}>
+          <WelcomeBanner
+            userName={`${user.firstName} ${user.lastName}`}
+            xpPoints={user.xpPoints}
+            level={user.level}
+          />
+          <AnimSection delay={200}>
+          {loading && (
+            <GlassCard style={{ padding: 24, alignItems: "center" }}>
               <ActivityIndicator size="large" color={colors.primary} />
             </GlassCard>
-          ) : (
-            <>
-              <StatBadgeRow>
-                <StatBadge 
-                  icon="📚" 
-                  label="COURSES" 
-                  value={`${learningProgress?.totalCoursesEnrolled || 0}`} 
-                  accent={colors.primary} 
-                />
-                <StatBadge 
-                  icon="📝" 
-                  label="QUIZZES" 
-                  value={`${learningProgress?.totalQuizzesCompleted || 0}`} 
-                  accent={colors.secondary} 
-                />
-              </StatBadgeRow>
-              
-              {learningProgress && (
-                <GlassCard style={{ padding: 16, gap: 12 }}>
-                  <Text style={{ color: colors.white, fontSize: 18, fontWeight: '700' }}>
-                    Learning Progress Overview
-                  </Text>
-                  <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-                    <View style={{ alignItems: 'center' }}>
-                      <Text style={{ color: colors.surfaceVariant, fontSize: 12 }}>Average Score</Text>
-                      <Text style={{ color: colors.tertiary, fontSize: 20, fontWeight: '700' }}>
-                        {learningProgress.averageScore.toFixed(1)}%
-                      </Text>
-                    </View>
-                    <View style={{ alignItems: 'center' }}>
-                      <Text style={{ color: colors.surfaceVariant, fontSize: 12 }}>Modules Completed</Text>
-                      <Text style={{ color: colors.emerald, fontSize: 20, fontWeight: '700' }}>
-                        {learningProgress.totalModulesCompleted}/{learningProgress.totalModulesAvailable}
-                      </Text>
-                    </View>
-                  </View>
-                </GlassCard>
-              )}
-              
-              <View style={{ gap: 8 }}>
-                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <Text style={{ color: colors.white, fontSize: 14, fontWeight: '700' }}>📚 My Courses</Text>
-                  <TouchableOpacity onPress={() => r.push('/courses')}>
-                    <Text style={{ color: colors.secondary, fontSize: 12, fontWeight: '600' }}>Browse All</Text>
-                  </TouchableOpacity>
-                </View>
-                {enrollments.length > 0 ? (
-                  enrollments.map((e) => (
-                    <GlassCard key={e.id} style={{ padding: 16 }}>
-                      <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-                        <View style={{ flex: 1 }}>
-                          <Text style={{ color: colors.white, fontSize: 16, fontWeight: '700' }}>
-                            {e.course.title}
-                          </Text>
-                          <Text style={{ color: colors.surfaceVariant, fontSize: 12 }}>
-                            {e.course.teacherName}
-                          </Text>
-                        </View>
-                        <View style={{ alignItems: 'flex-end' }}>
-                          <Text style={{ color: e.course.color, fontSize: 16, fontWeight: '700' }}>
-                            {Math.round((e.modulesCompleted / e.totalModules) * 100)}%
-                          </Text>
-                        </View>
-                      </View>
-                      <View style={{ height: 8, backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: 4, marginTop: 8 }}>
-                        <View 
-                          style={{ 
-                            height: '100%', 
-                            width: `${(e.modulesCompleted / e.totalModules) * 100}%`, 
-                            backgroundColor: e.course.color, 
-                            borderRadius: 4 
-                          }} 
-                        />
-                      </View>
-                    </GlassCard>
-                  ))
-                ) : (
-                  <GlassCard style={{ padding: 16 }}>
-                    <Text style={{ color: colors.surfaceVariant, fontSize: 12, fontStyle: 'italic' }}>
-                      No courses enrolled yet. Browse all courses to get started!
-                    </Text>
-                  </GlassCard>
-                )}
-              </View>
-              
-              <View style={{ gap: 8 }}>
-                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <Text style={{ color: colors.white, fontSize: 14, fontWeight: '700' }}>📝 Quiz History</Text>
-                  <TouchableOpacity onPress={() => r.push('/quiz-history')}>
-                    <Text style={{ color: colors.secondary, fontSize: 12, fontWeight: '600' }}>View All</Text>
-                  </TouchableOpacity>
-                </View>
-                <Button title="Browse Courses" onPress={() => r.push('/courses')} variant="primary" />
-              </View>
-            </>
           )}
+          </AnimSection>
+          <AnimSection delay={250}>
+          {!loading && <DashboardStats progress={learningProgress} />}
+          </AnimSection>
+          <AnimSection delay={350}>
+          {!loading && (
+            <EnrollmentList
+              enrollments={enrollments}
+              onBrowse={() => router.push("/courses")}
+              onOpen={(item) =>
+                router.push({
+                  pathname: "/course-syllabus",
+                  params: {
+                    courseId: item.course.id,
+                    courseTitle: item.course.title,
+                    teacherName: item.course.teacherName || "",
+                    courseColor: item.course.color,
+                  },
+                })
+              }
+              onAskAi={(courseId) =>
+                router.push(`/chat?courseId=${courseId}`)
+              }
+              onQuizzes={(item) =>
+                router.push(
+                  `/quizzes?courseId=${item.course.id}&courseTitle=${encodeURIComponent(item.course.title)}`,
+                )
+              }
+              onSummaries={(item) =>
+                router.push(
+                  `/summaries?courseId=${item.course.id}&courseTitle=${encodeURIComponent(item.course.title)}`,
+                )
+              }
+              onLeave={confirmLeave}
+            />
+          )}
+          </AnimSection>
         </View>
       </ScrollView>
     </PhoneFrame>
+  );
+}
+
+function AnimSection({ children, delay }: { children: React.ReactNode; delay: number }) {
+  const { opacity, translateY } = useFadeIn(delay, 500);
+  return (
+    <Animated.View style={{ opacity, transform: [{ translateY }] }}>
+      {children}
+    </Animated.View>
   );
 }

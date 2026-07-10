@@ -10,6 +10,8 @@ export function ConfigPanel({ onClose }: { onClose: () => void }) {
     { k: 'midnight', bg: '#1a172c' },
     { k: 'sunset', bg: '#ff4da6' },
     { k: 'deepforest', bg: '#111d21' },
+    { k: 'light', bg: '#e2daf5' },
+    { k: 'neon', bg: '#1c0040' },
   ] as const;
 
   return (

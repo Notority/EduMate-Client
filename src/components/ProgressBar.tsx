@@ -1,13 +1,34 @@
-import { View, Text, StyleSheet } from 'react-native';
+import { useEffect, useRef } from 'react';
+import { Animated, View, Text, StyleSheet } from 'react-native';
 import { colors } from '../constants/theme';
 
 interface Props { percent: number }
 
 export function ProgressBar({ percent }: Props) {
+  const fillWidth = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    Animated.timing(fillWidth, {
+      toValue: percent,
+      duration: 800,
+      useNativeDriver: false,
+    }).start();
+  }, [percent, fillWidth]);
+
   return (
     <View style={styles.w}>
       <View style={styles.track}>
-        <View style={[styles.fill, { width: `${percent}%` }]} />
+        <Animated.View
+          style={[
+            styles.fill,
+            {
+              width: fillWidth.interpolate({
+                inputRange: [0, 100],
+                outputRange: ['0%', '100%'],
+              }),
+            },
+          ]}
+        />
       </View>
       <View style={styles.label}>
         <View style={[styles.dot, percent < 100 && { opacity: 0.7 }]} />
