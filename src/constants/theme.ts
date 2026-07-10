@@ -20,4 +20,6 @@ export const skinGradients: Record<string, [string, string]> = {
   sunset: ['#170a1a', '#2e0c1f'],
   deepforest: ['#050e12', '#111d21'],
   indigo: ['#0c0514', '#120f21'],
+  light: ['#f0ecf9', '#e2daf5'],
+  neon: ['#0a001a', '#1c0040'],
 };

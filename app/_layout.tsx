@@ -19,6 +19,32 @@ export default function RootLayout() {
         <Stack.Screen name="teacher-course-edit" />
         <Stack.Screen name="courses" />
         <Stack.Screen name="quiz-history" />
+        <Stack.Screen name="resources" />
+        <Stack.Screen name="summaries" />
+        <Stack.Screen name="quizzes" />
+        <Stack.Screen name="course-syllabus" />
+        <Stack.Screen name="exams" />
+        <Stack.Screen name="exam/[id]" />
+        <Stack.Screen name="teacher-exams" />
+        <Stack.Screen name="teacher-grade-exam" />
+        <Stack.Screen name="teacher-assignments" />
+        <Stack.Screen name="teacher-grade-assignment" />
+        <Stack.Screen name="assignments" />
+        <Stack.Screen name="assignment/[id]" />
+        <Stack.Screen name="chat/index" />
+        <Stack.Screen name="chat/[id]" />
+        <Stack.Screen name="teacher-live-sessions" />
+        <Stack.Screen name="teacher-live-session-detail" />
+        <Stack.Screen name="live-sessions" />
+        <Stack.Screen name="jitsi-meet" />
+        <Stack.Screen name="stream-player" />
+        <Stack.Screen name="private-offers" />
+        <Stack.Screen name="teacher-private-courses" />
+        <Stack.Screen name="teacher-earnings" />
+        <Stack.Screen name="progress-dashboard" />
+        <Stack.Screen name="study-planner" />
+        <Stack.Screen name="global-search" />
+        <Stack.Screen name="suggested-courses" />
       </Stack>
     </>
   );

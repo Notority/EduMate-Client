@@ -1,27 +1,51 @@
-import { TouchableOpacity, Text, StyleSheet, ViewStyle } from 'react-native';
+import { useRef } from 'react';
+import { Animated, Text, StyleSheet, ViewStyle, TouchableWithoutFeedback } from 'react-native';
 import { colors } from '../constants/theme';
 
 interface Props {
   title: string;
   onPress: () => void;
-  variant?: 'primary' | 'ghost' | 'success';
+  variant?: 'primary' | 'ghost' | 'success' | 'secondary' | 'danger';
   disabled?: boolean;
   icon?: string;
   style?: ViewStyle;
 }
 
 export function Button({ title, onPress, variant = 'primary', disabled, style }: Props) {
+  const scale = useRef(new Animated.Value(1)).current;
+
+  const handlePressIn = () => {
+    Animated.spring(scale, {
+      toValue: 0.96, friction: 8, tension: 100, useNativeDriver: true,
+    }).start();
+  };
+
+  const handlePressOut = () => {
+    Animated.spring(scale, {
+      toValue: 1, friction: 5, tension: 80, useNativeDriver: true,
+    }).start();
+  };
+
   return (
-    <TouchableOpacity
+    <TouchableWithoutFeedback
+      onPressIn={handlePressIn}
+      onPressOut={handlePressOut}
       onPress={onPress}
       disabled={disabled}
-      style={[styles.base, styles[variant], disabled && styles.disabled, style]}
-      activeOpacity={0.7}
     >
-      <Text style={[styles.text, variant === 'ghost' && styles.ghostText]}>
-        {title}
-      </Text>
-    </TouchableOpacity>
+      <Animated.View
+        style={[
+          styles.base, styles[variant],
+          disabled && styles.disabled,
+          { transform: [{ scale }] },
+          style,
+        ]}
+      >
+        <Text style={[styles.text, variant === 'ghost' && styles.ghostText]}>
+          {title}
+        </Text>
+      </Animated.View>
+    </TouchableWithoutFeedback>
   );
 }
 
@@ -47,6 +71,16 @@ const styles = StyleSheet.create({
   },
   success: {
     backgroundColor: colors.emerald,
+  },
+  secondary: {
+    backgroundColor: 'rgba(255,255,255,0.08)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.15)',
+  },
+  danger: {
+    backgroundColor: 'rgba(239,68,68,0.2)',
+    borderWidth: 1,
+    borderColor: 'rgba(239,68,68,0.3)',
   },
   disabled: { opacity: 0.5 },
   text: {
